@@ -1,8 +1,9 @@
-import random
+import random, sys, math
 
 class Cell:
     def __init__(self, b_mine, near_mines_number):
         self.b_mine = b_mine
+        self.b_opend = False
         self.near_mines = near_mines_number
 
 class GameBoard:
@@ -21,21 +22,19 @@ class GameBoard:
 
         # generate the mines
         mine_created = 0
-        mine_ratio = mines_num / (width * width)
         while mine_created < mines_num:            
-            for i in range(width):
-                for j in range(width):         
-                    if mine_created < mines_num and random.random() >= mine_ratio:
-                        self.cell[i][j].b_mine = True
-                        mine_created = mine_created + 1            
+            ran_row = math.floor(random.random() * self.width)
+            ran_col = math.floor(random.random() * self.width)
+            self.cell[ran_row][ran_col].b_mine = True
+            mine_created = mine_created + 1            
 
         # generate the number around mines
-        near_idx = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]] # near index offset, [row, col]
+        self.near_idx = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)) # near index offset, [row, col]
         for row in range(len(self.cell)):
             for col in range(len(self.cell[row])):
                 if self.cell[row][col].b_mine == False:
                     near_mines = 0
-                    for offset in near_idx:
+                    for offset in self.near_idx:
                         row_tmp = row + offset[0]
                         col_tmp = col + offset[1]
                         if self.IsInBoard(row_tmp, col_tmp) == True and self.cell[row_tmp][col_tmp].b_mine == True:
@@ -48,7 +47,7 @@ class GameBoard:
         else :
             return False
 
-    def Print(self):
+    def PrintUncovered(self):
         for row in self.cell:
             for col in row:
                 if col.b_mine == True:
@@ -57,4 +56,50 @@ class GameBoard:
                     print(col.near_mines, end=' ')
             print('')
 
-GameBoard(50).Print()
+    def PrintCovered(self):
+        for row in self.cell:
+            for col in row:
+                if col.b_opend == True:
+                    if col.b_mine == True:
+                        print('*', end=' ')
+                    else:
+                        print(col.near_mines, end=' ')
+                else:
+                    print('●', end=' ')
+            print('')
+
+    def Open(self, row, col):
+        if row < 0 or row >= self.width:
+            print('Invalid row index!')
+        elif col < 0 or col >= self.width:
+            print('Invalid col index!')
+        else:
+            self.cell[row][col].b_opend = True
+            if self.cell[row][col].b_mine == True:
+                print('Mine Hit!!! Game Over!!!')
+                board.PrintUncovered()
+                sys.exit(0)
+                
+
+    def Sweep(self, row, col):
+        if row < 0 or row >= self.width:
+            print('Invalid row index!')
+        elif col < 0 or col >= self.width:
+            print('Invalid col index!')
+        else:
+            if self.cell[row][col].b_opend == False:
+                self.Open(row, col)
+            else:
+                for offset in self.near_idx:
+                    row_tmp = row + offset[0]
+                    col_tmp = col + offset[1]
+                    if self.IsInBoard(row_tmp, col_tmp) == True:
+                        self.Open(row_tmp, col_tmp)
+        board.PrintCovered()
+
+board = GameBoard(50)
+board.PrintCovered()
+print()
+board.Sweep(0,0)
+print()
+board.Sweep(0,0)
